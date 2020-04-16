@@ -1,101 +1,55 @@
 <!DOCTYPE html>
-
 <meta charset="utf-8">
-
 <title>Duc's D3 Geo World Map Template</title>
-
 <style>
 
 
 
 .country {
-
   fill: none;
-
   stroke: #fff;
-
   stroke-width: .3px;
-
   stroke-opacity: .9;
-
 }
-
-
-
-
 
 .country:hover{
-
   stroke: #fff;
-
   stroke-width: 1px;
-
   opacity: 0.8;
-
 }
-
-
 
 /*<!-- "properties":{"name":"Aruba","color:"""} -->*/
 
-
-
 #container {
-
   margin:10px 10%;
-
   padding:15px;
-
   border:1px solid #d0d0d0;
-
   border-radius: 5px;
-
   height:100%;
-
 }
 
 .hidden {
-
   display: none;
-
 }
 
 div.tooltip {
-
   color: #222;
-
   background: #fff;
-
   padding: .2em;
-
   text-shadow: #f5f5f5 0 1px 0;
-
   border-radius: 3px;
-
   box-shadow: 0px 0px 2px 0px #a6a6a6;
-
   opacity: 0.8;
-
   position: absolute;
-
 }
-
 </style>
-
 </head>
-
 <body>
-
   <div id="container"></div>
 
-
-
-<script src="d3.min.js"></script>
-
-<script src="queue.min.js"></script>
-
+<script src="https://d3js.org/d3.v3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"></script>
 <script src="topojson.v1.min.js"></script>
-
 <script>
 
 
@@ -103,181 +57,92 @@ div.tooltip {
 ////////////////////////////////////    VARIABLES   ////////////////////////////////////////////
 
 var mapFile = "world-110m.json";
-
 var dataFile = "gdp2012.tsv";
-
 var dataTextLabel = "GDP per capita (USD): ";
-
 var sigNumber = 6;
-
 var colorPalette = 	["rgb(198,219,239)", "rgb(158,202,225)","rgb(107,174,214)","rgb(66,146,198)","rgb(33,113,181)","rgb(8,81,156)","rgb(8,48,107)"]
-
-
 
 //["rgb(247,251,255)", "rgb(222,235,247)", "rgb(198,219,239)", "rgb(158,202,225)", "rgb(107,174,214)", "rgb(66,146,198)", "rgb(33,113,181)", "rgb(8,81,156)", "rgb(8,48,107)"]
 
-
-
-
-
-
-
 d3.select(window).on("resize", throttle);
 
-
-
 var zoom = d3.behavior.zoom()
-
     .scaleExtent([1, 8])
-
     .on("zoom", move);
 
-
-
 var width = document.getElementById('container').offsetWidth - 20;
-
 var height = width / 2;
-
-
-
 var topo,projection,path,svg,g;
-
-
-
 var tooltip = d3.select("#container").append("div").attr("class", "tooltip hidden");
-
-
-
 setup(width,height);
 
-
-
 var color = d3.scale.quantize()
-
     .range(colorPalette);
-
-
 
 // defer load of json and data
 
 queue()
-
    .defer(d3.json, mapFile)
-
    .defer(d3.tsv, dataFile, function(d) {
-
 	   val = +d.value;
-
 	   val = val.toPrecision(sigNumber)
-
        dictValue[d.id] = val;
-
        dictName[d.id] = "" +d.name;
-
    })
-
    .await(ready);
 
-
-
 var dictValue = {};
-
 var dictName = {};
 
-
-
 function setup(width,height){
-
   var projection = d3.geo.mercator()
 
   //var projection = d3.geo.conicEqualArea()
 
     .translate([-55, 50])
-
     .scale(width / 2.2 / Math.PI)
-
     .precision(.1);
 
-
-
   path = d3.geo.path()
-
       .projection(projection);
 
-
-
   svg = d3.select("#container").append("svg")
-
       .attr("width", width)
-
       .attr("height", height)
-
       .append("g")
-
       .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")")
-
       .call(zoom);
-
-
-
   g = svg.append("g");
 
 }
 
 
 
-
-
-
-
 function ready(error, world) {
-
     var countries = topojson.feature(world, world.objects.countries).features;
-
     topo = countries;
-
     draw(topo);
-
 }
 
-
-
 function draw(topo) {
-
     color.domain([
-
         d3.min(d3.values(dictValue)),
-
         d3.max(d3.values(dictValue))
-
     ]);
 
   var country = g.selectAll(".country").data(topo);
 
-
-
   country.enter().insert("path")
-
       .attr("class", "country")
-
       .attr("d", path)
-
       .attr("id", function(d,i) { return d.id; })
-
       .attr("title", function(d,i) { return dictName[d.id]; })
-
       .style("fill", function(d,i) {
-
           var value = dictValue[d.id];
-
           if (value) {
-
               return color(value);
-
           } else {
-
               return "#ccc";
-
           }
 
       });
@@ -285,107 +150,53 @@ function draw(topo) {
 
 
   //ofsets plus width/height of transform, plsu 20 px of padding, plus 20 extra for tooltip offset off mouse
-
   var offsetL = document.getElementById('container').offsetLeft+(width/2)+20;
-
   var offsetT = document.getElementById('container').offsetTop+(height/2)+20;
 
-
-
   //tooltips
-
   country
-
     .on("mousemove", function(d,i) {
-
       var mouse = d3.mouse(svg.node()).map( function(d) { return parseInt(d); } );
-
         tooltip
-
           .classed("hidden", false)
-
           //.attr("style", "left:"+(mouse[0]+offsetL)+"px;top:"+(mouse[1]+offsetT)+"px")
-
           .html(dictName[d.id] + "<br><br>" + dataTextLabel + dictValue[d.id])
-
-
-
       })
-
       .on("mouseout",  function(d,i) {
-
         tooltip.classed("hidden", true)
-
       });
 
-
-
 }
-
 
 
 function redraw() {
-
   width = document.getElementById('container').offsetWidth-60;
-
   height = width / 2;
-
   d3.select('svg').remove();
-
   setup(width,height);
-
   draw(topo);
-
 }
-
-
-
 function move() {
-
-
-
   var t = d3.event.translate;
-
   var s = d3.event.scale;
-
   var h = height / 3;
 
-
-
   t[0] = Math.min(width / 2 * (s - 1), Math.max(width / 2 * (1 - s), t[0]));
-
   t[1] = Math.min(height / 2 * (s - 1) + h * s, Math.max(height / 2 * (1 - s) - h * s, t[1]));
 
-
-
   zoom.translate(t);
-
   g.style("stroke-width", 1 / s).attr("transform", "translate(" + t + ")scale(" + s + ")");
 
-
-
 }
-
-
 
 var throttleTimer;
-
 function throttle() {
-
   window.clearTimeout(throttleTimer);
-
     throttleTimer = window.setTimeout(function() {
-
       redraw();
-
     }, 200);
-
 }
 
-
-
 </script>
-
 </body>
-
 </html>
