@@ -118,7 +118,7 @@ var path = d3.geoPath().projection(projection);
 svg.call(tip);
 
 queue()
-    .defer(d3.json, "world_countries.json")
+    .defer(d3.json, "world-topo.json")
     .defer(d3.tsv, "world.tsv")
     .await(ready);
 
